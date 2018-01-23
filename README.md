@@ -258,6 +258,8 @@ The link above should open the trace plots in a new tab. If the pink and blue li
 
 The model seems trustworthy, now we can try to answer our research questions. Our first two questions were if fathers spend more time with children when their partners work more, and if this is true across all countries in our study. We'll produce a table eventually, but let's start by visualizing it. 
 
+
+First extract the data we want to plot and create a list of countries
 ```{r}
 # create summary data as list
 sum <- summary(fistr_pat_mcmc)
@@ -267,6 +269,11 @@ countries <- c("Australia", "Austria", "Belgium", "Bulgaria", "CzechRepublic",
                "Estonia", "France", "Georgia", "Germany", "Hungary", "Italy", 
                "Lithuania", "Netherlands", "Norway", "Poland", "Romania", "Russia")
 
+```
+
+
+Second, create a data frame of means, and lower and upper bounds for 95% credible intervals
+```{r}
 # create means for beta 1
 meansb1 <- as.data.frame(sum$statistics[c(18:34), 1]) # the object fistr_pat_mcmc automatically averages results from both chains
 
@@ -295,16 +302,21 @@ plot.datb1 <- plot.datb1[,c(2:4)] # erase extra columns
 
 # using data labels from dataset
 plot.datb1$countries <- countries
+```
 
+Order data and create range for x-axis
+```{r}
 # BETA1 ordering the values by size of effect
 plot.datb1o <- plot.datb1[order(plot.datb1$means, decreasing=TRUE),]
 plot.datb1o$countries <- reorder(plot.datb1o$countries, plot.datb1o$means)
 
 # create range for x-axis in figure
 rg <- diff(range(c(plot.datb1o$upper, plot.datb1o$lower)))
+```
 
+Graph beta 1
+```{r}
 # graph beta1
-#png("analyses/results/graph_fistr_pat_b1_160118.png")
 dotplot(countries ~ means, data=plot.datb1o ,scales=list(y=list(cex=.85)), xlim=c(min(plot.datb1o$lower)-.1*rg, max(plot.datb1o$upper)+.1*rg), xlab="effect", panel=function(x,y, subscripts){
   panel.abline(h = as.numeric(y), col = "gray80", lty = 10, v = 0)
   panel.segments(plot.datb1o$lower[subscripts], y, plot.datb1o$upper[subscripts], y, lty=1, col="gray40")
@@ -377,7 +389,7 @@ European countries are pretty similar with regard to how responsive fathers are 
 
 And with that, I leave you with this map of total father involvement across Europe.
 
-load packages 
+Load packages 
 ```{r, results='hide', message=F, warning=F, error=F}
 library(ggplot2)
 library(grid)
@@ -388,8 +400,8 @@ library(data.table)
 ```
 
 
-get world map and select countries
-```{r, eval=F}
+Get world map and select countries
+```{r}
 # Get the world map
 worldMap <- getMap()
 
@@ -414,8 +426,10 @@ Coords <- lapply(index, function(i){
 })
 
 Coords <- do.call("rbind", Coords)
+```
 
-
+Create data frame of aggregated data
+```{r}
 # create a data frame aggdat with aggregated mean of fistr per country
 tempdata <- data.table(ggs.resp$fistr, ggs.resp$country)
 aggdat <- tempdata[, mean(V1, na.rm=T), by=V2] 
@@ -426,8 +440,10 @@ aggdat$V2 <- NULL
 
 # create fistr column in Coords dataframe
 Coords$fistr <- aggdat$fistr[match(Coords$region,aggdat$country)]
+```
 
-# Plot the map
+Plot the map
+```{r}
 P <- ggplot() + geom_polygon(data = Coords, aes(x = long, y = lat, group = region, fill = fistr),
                              colour = "black", size = 0.1) +
      coord_map(xlim = c(-13, 35),  ylim = c(32, 71))
@@ -441,11 +457,10 @@ P <- P + theme(panel.grid.minor = element_line(colour = NA),
   axis.ticks.y = element_blank(), axis.title = element_blank(),
   rect = element_blank(),
   plot.margin = unit(0 * c(-1.5, -1.5, -1.5, -1.5), "lines"))
-
-P 
+P
 ```
 
-![](/img/mapfistr.png)
+
 
 This blog post can be found on [GitHub](https://github.com/brettory/R2Jags)
 
